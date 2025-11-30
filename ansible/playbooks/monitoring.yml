@@ -1,0 +1,82 @@
+---
+# Playbook 4: Setup Monitoring Stack (Prometheus + Grafana)
+
+- name: Setup Monitoring Stack
+  hosts: master
+  become: yes
+  become_user: ubuntu
+  vars_files:
+    - ../vars/global.yml
+  
+  tasks:
+    - name: Check if Helm is installed
+      shell: which helm
+      register: helm_check
+      ignore_errors: yes
+    
+    - name: Download Helm installation script
+      get_url:
+        url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+        dest: /tmp/get_helm.sh
+        mode: '0755'
+      when: helm_check.rc != 0
+    
+    - name: Install Helm
+      shell: /tmp/get_helm.sh
+      when: helm_check.rc != 0
+    
+    - name: Add Prometheus Helm repository
+      kubernetes.core.helm_repository:
+        name: prometheus-community
+        repo_url: https://prometheus-community.github.io/helm-charts
+        state: present
+    
+    - name: Update Helm repositories
+      shell: helm repo update
+    
+    - name: Create monitoring namespace
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: "{{ monitoring_namespace }}"
+    
+    - name: Deploy kube-prometheus-stack
+      kubernetes.core.helm:
+        name: prometheus
+        chart_ref: prometheus-community/kube-prometheus-stack
+        release_namespace: "{{ monitoring_namespace }}"
+        create_namespace: true
+        values:
+          prometheus:
+            prometheusSpec:
+              retention: "{{ prometheus_retention }}"
+              resources:
+                requests:
+                  memory: 1Gi
+                  cpu: 500m
+          grafana:
+            adminUser: "{{ grafana_admin_user }}"
+            service:
+              type: NodePort
+              nodePort: 30080
+    
+    - name: Wait for monitoring pods
+      shell: kubectl wait --for=condition=Ready pods --all -n {{ monitoring_namespace }} --timeout=600s
+      ignore_errors: yes
+    
+    - name: Get Grafana admin password
+      shell: kubectl get secret -n {{ monitoring_namespace }} prometheus-grafana -o jsonpath="{.data.admin-password}" | base64 --decode
+      register: grafana_password
+    
+    - name: Print monitoring setup summary
+      debug:
+        msg:
+          - "Monitoring stack deployed successfully!"
+          - "Grafana URL: http://<NODE_IP>:30080"
+          - "Username: {{ grafana_admin_user }}"
+          - "Password: {{ grafana_password.stdout }}"
+          - ""
+          - "Prometheus: kubectl port-forward -n {{ monitoring_namespace }} svc/prometheus-kube-prometheus-prometheus 9090:9090"

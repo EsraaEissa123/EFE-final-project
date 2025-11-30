@@ -1,0 +1,139 @@
+// Jenkins CI Pipeline for vProfile Application
+// This pipeline handles code quality, testing, building, and pushing to ECR
+
+pipeline {
+    agent any
+    
+    environment {
+        AWS_REGION = 'us-east-1'
+        ECR_REGISTRY = 'REPLACE_WITH_AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com'
+        IMAGE_NAME = 'vprofile-app'
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+    }
+    
+    stages {
+        stage('Code Quality') {
+            parallel {
+                stage('YAML Linting') {
+                    steps {
+                        script {
+                            sh '''
+                                echo "Linting YAML files..."
+                                find k8s/ ansible/ -name "*.yaml" -o -name "*.yml" | xargs yamllint || true
+                            '''
+                        }
+                    }
+                }
+                
+                stage('Dockerfile Linting') {
+                    steps {
+                        script {
+                            sh '''
+                                echo "Linting Dockerfile..."
+                                docker run --rm -i hadolint/hadolint < Dockerfile || true
+                            '''
+                        }
+                    }
+                }
+                
+                stage('Ansible Linting') {
+                    steps {
+                        script {
+                            sh '''
+                                echo "Linting Ansible playbooks..."
+                                find ansible/playbooks/ -name "*.yml" | xargs ansible-lint || true
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Unit Tests') {
+            steps {
+                script {
+                    sh '''
+                        echo "Running unit tests..."
+                        mvn test
+                    '''
+                }
+            }
+        }
+        
+        stage('Build Application') {
+            steps {
+                script {
+                    sh '''
+                        echo "Building vProfile application with Maven..."
+                        mvn clean package -DskipTests
+                    '''
+                }
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh """
+                        echo "Building Docker image..."
+                        docker build \
+                            --build-arg BUILD_DATE=\$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
+                            --build-arg VCS_REF=\${GIT_COMMIT} \
+                            -t ${IMAGE_NAME}:${IMAGE_TAG} \
+                            -t ${IMAGE_NAME}:latest \
+                            -f Dockerfile .
+                    """
+                }
+            }
+        }
+        
+        stage('Security Scan') {
+            steps {
+                script {
+                    sh """
+                        echo "Scanning Docker image for vulnerabilities..."
+                        trivy image --severity HIGH,CRITICAL ${IMAGE_NAME}:${IMAGE_TAG} || true
+                    """
+                }
+            }
+        }
+        
+        stage('Push to ECR') {
+            steps {
+                script {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
+                                     credentialsId: 'aws-ecr-credentials']]) {
+                        sh """
+                            # Login to ECR
+                            aws ecr get-login-password --region ${AWS_REGION} | \
+                            docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                            
+                            # Tag images
+                            docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${ECR_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
+                            docker tag ${IMAGE_NAME}:latest ${ECR_REGISTRY}/${IMAGE_NAME}:latest
+                            
+                            # Push to ECR
+                            docker push ${ECR_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
+                            docker push ${ECR_REGISTRY}/${IMAGE_NAME}:latest
+                            
+                            echo "Image pushed: ${ECR_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+                        """
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            echo 'CI Pipeline completed successfully!'
+            echo "Image: ${ECR_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+        }
+        failure {
+            echo 'CI Pipeline failed!'
+        }
+    }
+}

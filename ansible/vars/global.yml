@@ -1,0 +1,45 @@
+---
+# Global Variables for Kubernetes Cluster
+
+# Kubernetes Version
+k8s_version: "1.28"
+k8s_package_version: "1.28.*"
+
+# Container Runtime
+containerd_version: "1.7.2"
+
+# Network Configuration
+pod_network_cidr: "192.168.0.0/16"
+service_cidr: "10.96.0.0/12"
+
+# Calico CNI
+calico_version: "v3.26.1"
+
+# Image Registry
+ecr_registry: "REPLACE_WITH_AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com"
+image_tag: "latest"
+
+# Application Configuration
+app_namespace: "vprofile"
+monitoring_namespace: "monitoring"
+
+# vProfile Application
+vprofile_image: "{{ ecr_registry }}/vprofile-app"
+mysql_image: "mysql:8.0"
+memcached_image: "memcached:1.6-alpine"
+rabbitmq_image: "rabbitmq:3.12-management-alpine"
+
+# Resource Limits
+vprofile_memory_request: "512Mi"
+vprofile_memory_limit: "1Gi"
+vprofile_cpu_request: "500m"
+vprofile_cpu_limit: "1000m"
+
+mysql_memory_request: "512Mi"
+mysql_memory_limit: "1Gi"
+mysql_cpu_request: "250m"
+mysql_cpu_limit: "500m"
+
+# Monitoring
+prometheus_retention: "30d"
+grafana_admin_user: "admin"

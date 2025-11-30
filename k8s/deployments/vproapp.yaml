@@ -1,0 +1,121 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vproapp
+  namespace: vprofile
+  labels:
+    app: vproapp
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: vproapp
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: vproapp
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      containers:
+      - name: vproapp
+        image: REPLACE_WITH_ECR_REGISTRY/vprofile-app:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          runAsNonRoot: true
+          runAsUser: 1001
+          capabilities:
+            drop:
+              - ALL
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        env:
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: vprofile-config
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: vprofile-config
+              key: DB_PORT
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: vprofile-config
+              key: DB_NAME
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: vprofile-secrets
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vprofile-secrets
+              key: DB_PASSWORD
+        - name: MC_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: vprofile-config
+              key: MC_HOST
+        - name: MC_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: vprofile-config
+              key: MC_PORT
+        - name: RMQ_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: vprofile-config
+              key: RMQ_HOST
+        - name: RMQ_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: vprofile-config
+              key: RMQ_PORT
+        - name: RMQ_USER
+          valueFrom:
+            secretKeyRef:
+              name: vprofile-secrets
+              key: RMQ_USER
+        - name: RMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vprofile-secrets
+              key: RMQ_PASSWORD

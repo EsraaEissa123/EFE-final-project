@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vprofile-config
+  namespace: vprofile
+data:
+  # Database Configuration
+  DB_HOST: "vprodb-service"
+  DB_PORT: "3306"
+  DB_NAME: "accounts"
+  
+  # Memcached Configuration
+  MC_HOST: "vprocache-service"
+  MC_PORT: "11211"
+  
+  # RabbitMQ Configuration
+  RMQ_HOST: "vpromq-service"
+  RMQ_PORT: "5672"
+  
+  # Application Configuration
+  APP_PORT: "8080"

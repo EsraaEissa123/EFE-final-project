@@ -1,0 +1,94 @@
+// Jenkins CD Pipeline for vProfile Application
+// This pipeline deploys the application to Kubernetes using Ansible
+
+pipeline {
+    agent any
+    
+    environment {
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        ANSIBLE_HOST_KEY_CHECKING = 'False'
+    }
+    
+    stages {
+        stage('Get Latest Artifacts') {
+            steps {
+                script {
+                    sh '''
+                        echo "Updating deployment configuration with new image tag..."
+                        # Update the image tag in Ansible variables
+                        sed -i "s/image_tag:.*/image_tag: \\"${IMAGE_TAG}\\"/" ansible/vars/global.yml
+                    '''
+                }
+            }
+        }
+        
+        stage('Deploy via Ansible') {
+            steps {
+                script {
+                    withCredentials([sshUserPrivateKey(
+                        credentialsId: 'k8s-master-ssh',
+                        keyFileVariable: 'SSH_KEY')]) {
+                        sh '''
+                            echo "Deploying vProfile application to Kubernetes..."
+                            
+                            cd ansible
+                            ansible-playbook -i inventory/hosts \
+                                             playbooks/deploy-vprofile.yml \
+                                             --private-key=${SSH_KEY} \
+                                             -e "image_tag=${IMAGE_TAG}"
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Verify Deployment') {
+            steps {
+                script {
+                    withCredentials([sshUserPrivateKey(
+                        credentialsId: 'k8s-master-ssh',
+                        keyFileVariable: 'SSH_KEY')]) {
+                        sh '''
+                            echo "Verifying deployment status..."
+                            
+                            # Check deployment rollout status
+                            ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ubuntu@k8s-master \
+                                'kubectl rollout status deployment/vproapp -n vprofile --timeout=300s'
+                            
+                            # Get pod status
+                            ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ubuntu@k8s-master \
+                                'kubectl get pods -n vprofile'
+                            
+                            # Check service endpoints
+                            ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ubuntu@k8s-master \
+                                'kubectl get svc -n vprofile'
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Health Check') {
+            steps {
+                script {
+                    sh '''
+                        echo "Running health checks..."
+                        # Add health check tests here
+                        # curl http://<NODE_IP>:30001/health || true
+                    '''
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo 'CD Pipeline completed successfully!'
+            echo "Deployment version: ${IMAGE_TAG}"
+        }
+        failure {
+            echo 'CD Pipeline failed!'
+            // Optionally trigger rollback
+        }
+    }
+}
