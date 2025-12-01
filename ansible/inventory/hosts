@@ -1,9 +1,9 @@
 [master]
-k8s-master ansible_host=44.221.58.236 ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/vprofile-key.pem
+k8s-master ansible_host=44.221.84.79 ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/vprofile-key.pem
 
 [workers]
-k8s-worker1 ansible_host=13.221.58.87 ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/vprofile-key.pem
-k8s-worker2 ansible_host=3.235.228.48 ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/vprofile-key.pem
+k8s-worker1 ansible_host=44.192.16.185 ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/vprofile-key.pem
+k8s-worker2 ansible_host=3.239.116.16 ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/vprofile-key.pem
 
 [k8s_cluster:children]
 master
