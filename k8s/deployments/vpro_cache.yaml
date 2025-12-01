@@ -29,6 +29,7 @@ spec:
           name: memcached
         securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
                 - ALL
