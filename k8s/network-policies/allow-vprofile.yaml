@@ -37,28 +37,7 @@ spec:
     ports:
     - protocol: TCP
       port: 11211
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: vproapp-to-rabbitmq
-  namespace: vprofile
-spec:
-  podSelector:
-    matchLabels:
-      app: vpromq
-  policyTypes:
-  - Ingress
-  ingress:
-  - from:
-    - podSelector:
-        matchLabels:
-          app: vproapp
-    ports:
-    - protocol: TCP
-      port: 5672
-    - protocol: TCP
-      port: 15672
+
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

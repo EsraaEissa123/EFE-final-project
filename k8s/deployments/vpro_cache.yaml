@@ -27,6 +27,11 @@ spec:
         ports:
         - containerPort: 11211
           name: memcached
+        securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
         resources:
           requests:
             memory: "128Mi"
@@ -34,11 +39,7 @@ spec:
           limits:
             memory: "256Mi"
             cpu: "200m"
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-              - ALL
+          
         livenessProbe:
           tcpSocket:
             port: 11211

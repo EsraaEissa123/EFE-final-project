@@ -15,6 +15,12 @@ spec:
       labels:
         app: vpromq
     spec:
+      securityContext:
+          seccompProfile:
+            type: RuntimeDefault
+          runAsNonRoot: true
+          runAsUser: 1001
+          fsGroup: 1001
       containers:
       - name: rabbitmq
         image: rabbitmq:3.12-management
@@ -23,6 +29,11 @@ spec:
           name: amqp
         - containerPort: 15672
           name: management
+        securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
         resources:
           requests:
             memory: "256Mi"
@@ -30,6 +41,7 @@ spec:
           limits:
             memory: "512Mi"
             cpu: "400m"
+          
         env:
         - name: RABBITMQ_DEFAULT_USER
           valueFrom:
