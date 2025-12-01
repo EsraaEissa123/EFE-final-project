@@ -15,6 +15,12 @@ spec:
       labels:
         app: vprocache
     spec:
+      securityContext:
+          seccompProfile:
+            type: RuntimeDefault
+          runAsNonRoot: true
+          runAsUser: 1001
+          fsGroup: 1001
       containers:
       - name: memcached
         image: memcached:1.6-alpine
