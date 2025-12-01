@@ -47,9 +47,9 @@
         reload: yes
         sysctl_file: /etc/sysctl.d/k8s.conf
       loop:
-        - { name: 'net.bridge.bridge-nf-call-iptables', value: '1' }
-        - { name: 'net.bridge.bridge-nf-call-ip6tables', value: '1' }
-        - { name: 'net.ipv4.ip_forward', value: '1' }
+        - { name: net.bridge.bridge-nf-call-iptables, value: 1 }
+        - { name: net.bridge.bridge-nf-call-ip6tables, value: 1 }
+        - { name: net.ipv4.ip_forward, value: 1 }
     
     - name: Install required packages
       apt:
@@ -161,9 +161,9 @@
       assert:
         that:
           - swap_status.stdout == ""
-        fail_msg: "Swap is still enabled!"
-        success_msg: "Swap is disabled correctly"
+        fail_msg: Swap is still enabled!
+        success_msg: Swap is disabled correctly
     
     - name: Print preparation summary
       debug:
-        msg: "Node {{ inventory_hostname }} is ready for Kubernetes!"
+        msg: Node {{ inventory_hostname }} is ready for Kubernetes!
