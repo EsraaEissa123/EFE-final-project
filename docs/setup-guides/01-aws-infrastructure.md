@@ -86,7 +86,7 @@ k8s-worker2: <WORKER2_PUBLIC_IP> / <WORKER2_PRIVATE_IP>
 ## Step 6: Test SSH Access
 
 ```bash
-# Set correct permissions for SSH key
+# Set correct permissions for SSH keye
 chmod 400 ~/.ssh/k8s-key.pem
 
 # Test SSH to master

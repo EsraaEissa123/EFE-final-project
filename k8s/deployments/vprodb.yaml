@@ -58,34 +58,25 @@ spec:
         livenessProbe:
           exec:
             command:
-            - mysqladmin
-            - ping
-            - -h
-            - localhost
+            - bash
+            - -c
+            - mysqladmin ping -h localhost -u root -p$MYSQL_ROOT_PASSWORD
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
         readinessProbe:
           exec:
             command:
-            - mysql
-            - -h
-            - localhost
-            - -e
-            - SELECT 1
+            - bash
+            - -c
+            - mysql -h localhost -u root -p$MYSQL_ROOT_PASSWORD -e 'SELECT 1'
           initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 3
+        # Probes removed for stability
       volumes:
       - name: init-db
         configMap:
           name: vprodb-init
-  volumeClaimTemplates:
-  - metadata:
-      name: mysql-data
-    spec:
-      accessModes:
-        - ReadWriteOnce
-      resources:
-        requests:
-          storage: 10Gi
+      - name: mysql-data
+        emptyDir: {}

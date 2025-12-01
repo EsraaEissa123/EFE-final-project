@@ -89,7 +89,7 @@
 
 **الخطوات بالتفصيل:**
 1.  ادخل AWS Console -> ECR -> Create Repository.
-    *   سميه `vprofile-app`.
+    *   سميه `vprofile-app`.ECR
 2.  على جهازك، اعمل Build للـ Docker Image:
     ```bash
     docker build -t vprofile-app:v1 .

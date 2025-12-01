@@ -42,13 +42,11 @@ RUN groupadd -r vprofile && useradd -r -g vprofile -u 1001 vprofile
 
 # Create necessary directories with correct permissions
 RUN mkdir -p /usr/local/tomcat/temp /usr/local/tomcat/work && \
-    chown -R vprofile:vprofile /usr/local/tomcat
+  chown -R vprofile:vprofile /usr/local/tomcat
 
 # Security: Remove unnecessary packages and update
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# Note: Removed apt update/upgrade as Debian Stretch is EOL
+# Consider switching to a newer Tomcat base image in production
 
 # Switch to non-root user
 USER vprofile

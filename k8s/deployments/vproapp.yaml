@@ -20,13 +20,15 @@ spec:
       labels:
         app: vproapp
     spec:
+      imagePullSecrets:
+      - name: ecr-cred
       securityContext:
         runAsNonRoot: true
         runAsUser: 1001
         fsGroup: 1001
       containers:
       - name: vproapp
-        image: REPLACE_WITH_ECR_REGISTRY/vprofile-app:latest
+        image: 593363502933.dkr.ecr.us-east-1.amazonaws.com/vprofile-app:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080

@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: rabbitmq
-        image: rabbitmq:3.12-management-alpine
+        image: rabbitmq:3.12-management
         ports:
         - containerPort: 5672
           name: amqp
@@ -41,22 +41,13 @@ spec:
             secretKeyRef:
               name: vprofile-secrets
               key: RMQ_PASSWORD
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-              - ALL
         livenessProbe:
-          exec:
-            command:
-            - rabbitmq-diagnostics
-            - ping
+          tcpSocket:
+            port: 5672
           initialDelaySeconds: 60
           periodSeconds: 15
         readinessProbe:
-          exec:
-            command:
-            - rabbitmq-diagnostics
-            - check_port_connectivity
+          tcpSocket:
+            port: 5672
           initialDelaySeconds: 20
           periodSeconds: 10
