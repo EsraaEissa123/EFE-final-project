@@ -92,8 +92,8 @@
     - name: Configure containerd to use systemd cgroup driver
       replace:
         path: /etc/containerd/config.toml
-        regexp: 'SystemdCgroup = false'
-        replace: 'SystemdCgroup = true'
+        regexp: SystemdCgroup = false
+        replace: SystemdCgroup = true
     
     - name: Restart containerd
       systemd:

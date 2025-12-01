@@ -1,0 +1,33 @@
+---
+# Playbook: Install Nginx Ingress Controller
+# Installs the bare-metal version of Nginx Ingress Controller
+
+- name: Install Nginx Ingress Controller
+  hosts: master
+  become: yes
+  become_user: ubuntu
+  vars:
+    ingress_version: controller-v1.8.2
+    ingress_manifest_url: "https://raw.githubusercontent.com/kubernetes/ingress-nginx/{{ ingress_version }}/deploy/static/provider/baremetal/deploy.yaml"
+  
+  tasks:
+    - name: Apply Nginx Ingress Controller Manifest
+      shell: kubectl apply -f {{ ingress_manifest_url }}
+      register: ingress_install
+    
+    - name: Wait for Ingress Controller Pods to be Ready
+      shell: kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=300s
+      retries: 5
+      delay: 30
+    
+    - name: Verify Ingress Service
+      shell: kubectl get svc -n ingress-nginx
+      register: ingress_svc
+    
+    - name: Display Ingress Service Details
+      debug:
+        msg: "{{ ingress_svc.stdout_lines }}"
+
+    - name: Print Installation Summary
+      debug:
+        msg: Nginx Ingress Controller installed successfully! Access via NodePort on any node.
