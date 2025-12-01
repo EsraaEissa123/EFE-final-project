@@ -23,6 +23,8 @@ spec:
       imagePullSecrets:
       - name: ecr-cred
       securityContext:
+        seccompProfile:
+          type: RuntimeDefault
         runAsNonRoot: true
         runAsUser: 1001
         fsGroup: 1001
