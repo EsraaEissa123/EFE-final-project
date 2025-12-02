@@ -31,6 +31,7 @@ spec:
           name: management
         securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
                 - ALL
@@ -41,7 +42,9 @@ spec:
           limits:
             memory: "512Mi"
             cpu: "400m"
-          
+        volumeMounts:
+        - name: rabbitmq-data
+          mountPath: /var/lib/rabbitmq
         env:
         - name: RABBITMQ_DEFAULT_USER
           valueFrom:
@@ -63,3 +66,6 @@ spec:
             port: 5672
           initialDelaySeconds: 20
           periodSeconds: 10
+      volumes:
+      - name: rabbitmq-data
+        emptyDir: {}

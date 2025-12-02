@@ -39,7 +39,7 @@ spec:
               protocol: TCP
           securityContext:
             allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false
+            readOnlyRootFilesystem: true
             runAsNonRoot: true
             runAsUser: 1001
             capabilities:
@@ -52,6 +52,13 @@ spec:
             limits:
               memory: "1Gi"
               cpu: "1000m"
+          volumeMounts:
+            - name: tomcat-temp
+              mountPath: /usr/local/tomcat/temp
+            - name: tomcat-work
+              mountPath: /usr/local/tomcat/work
+            - name: tomcat-logs
+              mountPath: /usr/local/tomcat/logs
           livenessProbe:
             httpGet:
               path: /
@@ -124,3 +131,10 @@ spec:
                 secretKeyRef:
                   name: vprofile-secrets
                   key: RMQ_PASSWORD
+      volumes:
+        - name: tomcat-temp
+          emptyDir: {}
+        - name: tomcat-work
+          emptyDir: {}
+        - name: tomcat-logs
+          emptyDir: {}
