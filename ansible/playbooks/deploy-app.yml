@@ -37,4 +37,138 @@
         namespace: "{{ app_namespace }}"
         src: "{{ k8s_base_path }}/network-policies/"  # Apply ALL .yml/.yaml files
       tags: [network-policies]
+    
+    - name: Deploy MySQL Database
+      kubernetes.core.k8s:
+        state: present
+        namespace: "{{ app_namespace }}"
+        src: "{{ k8s_base_path }}/deployments/vpro_db.yaml"
+      tags: [database]
+
+    - name: Wait for MySQL to be ready
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: "{{ app_namespace }}"
+        label_selectors:
+          - "app=vprodb"
+      register: mysql_pod
+      until: mysql_pod.resources | selectattr('status.phase', 'equalto', 'Running') | list | length > 0
+      retries: 20
+      delay: 15
+      tags: [database]
+    
+    - name: Deploy Memcached
+      kubernetes.core.k8s:
+        state: present
+        namespace: "{{ app_namespace }}"
+        src: "{{ k8s_base_path }}/deployments/vpro_cache.yaml"
+      tags: [cache]
+    
+    - name: Wait for Memcached to be ready
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: "{{ app_namespace }}"
+        label_selectors:
+          - "app=vprocache"
+      register: memcached_pod
+      until: memcached_pod.resources | selectattr('status.phase', 'equalto', 'Running') | list | length > 0
+      retries: 20
+      delay: 15
+      tags: [cache]
+    
+    - name: Deploy RabbitMQ
+      kubernetes.core.k8s:
+        state: present
+        namespace: "{{ app_namespace }}"
+        src: "{{ k8s_base_path }}/deployments/vpro_mq.yaml"
+      tags: [rabbitmq]
+    
+    - name: Wait for RabbitMQ to be ready
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: "{{ app_namespace }}"
+        label_selectors:
+          - "app=vpromq"
+      register: rabbitmq_pod
+      until: rabbitmq_pod.resources | selectattr('status.phase', 'equalto', 'Running') | list | length > 0
+      retries: 20
+      delay: 15
+      tags: [rabbitmq]
+    
+    - name: Deploy vProfile Application
+      kubernetes.core.k8s:
+        state: present
+        namespace: "{{ app_namespace }}"
+        src: "{{ k8s_base_path }}/deployments/vpro_app.yaml"
+      tags: [app]
+
+    - name: Wait for VProfile app deployment to complete /check Deployment status
+      kubernetes.core.k8s_info:
+        kind: Deployment
+        name: vproapp
+        namespace: "{{ app_namespace }}"
+      register: vproapp_status
+      until: >
+        vproapp_status.resources[0].status.readyReplicas | default(0) >= 1 and
+        vproapp_status.resources[0].status.conditions | 
+        selectattr('type', 'equalto', 'Available') | 
+        map(attribute='status') | first == 'True'
+      retries: 30
+      delay: 10
+      tags: [deploy, verify]
+    
+    - name: Wait for VProfile app deployment to complete /check Pod status
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: "{{ app_namespace }}"
+        label_selectors:
+          - "app=vproapp"
+      register: vpro_app_pod
+      until: vpro_app_pod.resources | selectattr('status.phase', 'equalto', 'Running') | list | length > 0
+      retries: 20
+      delay: 15
+      tags: [app]
+    
+    - name: Apply Services
+      kubernetes.core.k8s:
+        state: present
+        namespace: "{{ app_namespace }}"
+        src: "{{ k8s_base_path }}/services/"
+      tags: [services]
+    
+    - name: Deploy Ingress
+      kubernetes.core.k8s:
+        state: present
+        namespace: "{{ app_namespace }}"
+        src: "{{ k8s_base_path }}/ingress/vpro-ingress.yaml"
+      tags: [ingress]
+      
+    - name: Get all pods status
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: "{{ app_namespace }}"
+      register: all_pods
+      tags: [verify]
+    
+    - name: Display deployment summary
+      debug:
+        msg:
+          - "=========================================="
+          - "VProfile Application Deployment Complete!"
+          - "=========================================="
+          - "Namespace: {{ app_namespace }}"
+          - "Pods Running: {{ all_pods.resources | selectattr('status.phase', 'equalto', 'Running') | list | length }}"
+          - ""
+          - "Components deployed:"
+          - "  - MySQL Database"
+          - "  - Memcached"
+          - "  - RabbitMQ"
+          - "  - VProfile Application"
+          - ""
+          - "Next steps:"
+          - "  kubectl get pods -n {{ app_namespace }}"
+          - "  kubectl get svc -n {{ app_namespace }}"
+      tags: [verify]
+    
+
       
