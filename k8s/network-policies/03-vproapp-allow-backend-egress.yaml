@@ -1,0 +1,38 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: vproapp-allow-backend-egress
+  namespace: vprofile
+spec:
+  podSelector:
+    matchLabels:
+      app: vproapp
+  policyTypes:
+    - Egress
+  egress:
+    # Allow connection to database
+    - to:
+        - podSelector:
+            matchLabels:
+              app: vprodb
+      ports:
+        - protocol: TCP
+          port: 3306
+    
+    # Allow connection to cache
+    - to:
+        - podSelector:
+            matchLabels:
+              app: vprocache
+      ports:
+        - protocol: TCP
+          port: 11211
+    
+    # Allow connection to message queue
+    - to:
+        - podSelector:
+            matchLabels:
+              app: vpromq
+      ports:
+        - protocol: TCP
+          port: 5672
