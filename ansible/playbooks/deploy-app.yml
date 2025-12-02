@@ -1,0 +1,40 @@
+---
+- name: Deploy VProfile Application to Kubernetes
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    k8s_base_path: "../../k8s"
+    app_namespace: "vprofile"
+  tasks:
+    - name: Create vprofile namespace
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ k8s_base_path }}/namespace.yml"
+      tags: [namespace]
+
+    - name: Apply ConfigMaps
+      kubernetes.core.k8s:
+        state: present
+        namespace: "{{ app_namespace }}"
+        src: "{{ k8s_base_path }}/configmaps/{{ item }}"
+      loop:
+        - vprofile-config.yaml
+        - db-init.yaml
+      tags: [configmaps]
+  
+    - name: Apply Secrets
+      kubernetes.core.k8s:
+        state: present
+        namespace: "{{ app_namespace }}"
+        src: "{{ k8s_base_path }}/secrets/vprofile-secrets.yaml"
+      no_log: true
+      tags: [secrets]
+
+    - name: Apply Network Policies from Directory
+      kubernetes.core.k8s:
+        state: present
+        namespace: "{{ app_namespace }}"
+        src: "{{ k8s_base_path }}/network-policies/"  # Apply ALL .yml/.yaml files
+      tags: [network-policies]
+      

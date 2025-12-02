@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: vprocache-service
+  namespace: vprofile
+spec:
+  type: ClusterIP
+  selector:
+    app: vprocache
+  ports:
+  - port: 11211
+    targetPort: 11211
+    protocol: TCP
+    name: memcached
